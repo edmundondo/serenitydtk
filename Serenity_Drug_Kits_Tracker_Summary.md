@@ -1,6 +1,6 @@
-# WhatsApp Groups Dashboard — Group Summaries
+# Serenity Drug Kits Tracker — Group Summaries
 
-*Last synced from chat export 9/13/26. Companion files: `index.html` (interactive dashboard), `WhatsApp_Groups_Dashboard.xlsx` (spreadsheet tracker).*
+*Last synced from chat export 9/13/26. Companion files: `index.html` (interactive dashboard), `Serenity_Drug_Kits_Tracker.xlsx` (spreadsheet tracker).*
 
 ## 🇿🇦Serenity🇿🇦
 
