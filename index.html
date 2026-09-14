@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<!-- TRACKER VERSION: 1.0 — bump this comment and CONTENT/version-badge together on future updates -->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>WhatsApp Groups Dashboard</title>
+<meta name="tracker-version" content="1.0">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+</head>
+<body>
+<div class="wrap">
+  <section class="hero">
+  <header>
+    <div class="eyebrow">WhatsApp Group → Project Tracker</div>
+    <div class="title-row"><h1>WhatsApp Groups Dashboard</h1><span class="version-badge">v1.0</span></div>
+    <div class="subtitle">1 group tracked as 1 live project · last synced from chat export 9/13/26</div>
+    <div class="print-meta" id="print-meta"></div>
+  </header>
+  </section>
+
+  <section class="overview">
+  <div class="stats" id="stats"></div>
+
+  <div class="top-row">
+    <div class="donut-block" id="donut-block"></div>
+    <div class="search-wrap">
+      <input type="text" id="search" placeholder="Search groups, tasks, or owners…" oninput="onSearch(this.value)">
+    </div>
+    <button class="pdf-btn" onclick="exportPDF()">📄 Export PDF Report</button>
+    <button class="csv-btn" onclick="exportCSV()">📊 Export Excel (CSV)</button>
+    <button class="epub-btn" onclick="exportEPUB()">📚 Export EPUB</button>
+  </div>
+
+  <div class="filters" id="filters"></div>
+
+  </section>
+
+  <section class="tasks">
+  <div class="grid" id="grid"></div>
+  </section>
+
+  <footer>Click a group row to expand · click any status pill to cycle done → in progress → not started · search and filter above <span class="version-tag">v1.0</span></footer>
+</div>
+
+<style>
+  :root {
+    --bg: #0B141A;
+    --panel: #111B21;
+    --panel-hover: #182229;
+    --line: #263640;
+    --text: #E9EDEF;
+    --text-dim: #8696A0;
+    --gold: #25D366;
+    --gold-soft: rgba(37,211,102,0.14);
+    --green: #25D366;
+    --yellow: #FFC000;
+    --red: #E5484D;
+    --high: #128C7E;
+    --clickable-hint: #8FD9A8;      /* light green border marking a clickable header with a drill-down panel underneath */
+    --clickable-hint-width: 2px;    /* border thickness in the resting (collapsed) state */
+    --clickable-active-width: 4px;  /* border thickness once the drill-down is open — pairs with the bold var(--green) color below */
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: system-ui, -apple-system, Segoe UI, sans-serif;
+    font-size: 18px;
+    padding: 32px 20px 60px;
+    min-height: 100vh;
+  }
+
+  .wrap { max-width: 1100px; margin: 0 auto; }
+
+  header { margin-bottom: 28px; }
+  .title-row { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+  .version-badge {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-dim);
+    background: var(--panel-hover);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 3px 10px;
+    text-transform: none;
+    letter-spacing: 0.02em;
+  }
+  .version-tag { color: var(--gold); font-weight: 700; }
+  .eyebrow {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  h1 {
+    font-family: 'Arial Narrow', Arial, sans-serif;
+    font-weight: 700;
+    font-size: 42px;
+    letter-spacing: 0.01em;
+    margin: 0 0 4px;
+    text-transform: uppercase;
+  }
+  .subtitle { color: var(--text-dim); font-size: 14px; }
+
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 1px;
+    background: var(--line);
+    border: 3px solid var(--line);
+    border-radius: 10px;
+    overflow: hidden;
+    margin: 26px 0 34px;
+  }
+  .stat { background: var(--panel); padding: 16px 18px; }
+  .stat .num {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 28px;
+    font-weight: 700;
+    line-height: 1;
+  }
+  .stat .lbl {
+    font-size: 11px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-top: 6px;
+  }
+  .stat.done .num { color: var(--green); }
+  .stat.progress .num { color: var(--yellow); }
+  .stat.notstarted .num { color: var(--red); }
+
+  .top-row {
+    display: flex;
+    gap: 24px;
+    align-items: center;
+    margin: 26px 0 22px;
+    flex-wrap: wrap;
+  }
+  .donut-block { display: flex; align-items: center; gap: 14px; }
+  .donut-legend { display: flex; flex-direction: column; gap: 4px; font-size: 11.5px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: var(--text-dim); }
+  .donut-legend span.sw { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 6px; }
+
+  .search-wrap { flex: 1; min-width: 220px; position: relative; }
+  .search-wrap input {
+    width: 100%;
+    background: var(--panel);
+    border: 3px solid var(--line);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: system-ui, -apple-system, Segoe UI, sans-serif;
+    font-size: 13.5px;
+    padding: 10px 14px 10px 34px;
+  }
+  .search-wrap input:focus { outline: none; border-color: var(--gold); }
+  .search-wrap::before {
+    content: "⌕";
+    position: absolute;
+    left: 12px; top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-dim);
+    font-size: 15px;
+  }
+
+  .filters { display: flex; gap: 8px; margin-bottom: 22px; flex-wrap: wrap; }
+  .filter-btn {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 12px;
+    background: var(--panel);
+    color: var(--text-dim);
+    border: 3px solid var(--line);
+    border-radius: 999px;
+    padding: 7px 14px;
+    cursor: pointer;
+    transition: all .15s ease;
+  }
+  .filter-btn:hover { border-color: var(--gold); color: var(--text); }
+  .filter-btn.active { background: var(--gold-soft); border-color: var(--gold); color: var(--gold); }
+
+  .grid { display: flex; flex-direction: column; gap: 14px; }
+
+  .card {
+    background: var(--panel);
+    border: 3px solid var(--line);
+    border-radius: 12px;
+    overflow: hidden;
+    position: relative;
+    transition: border-color .15s ease;
+  }
+  .card.hidden { display: none; }
+
+  .core-stripe { position: absolute; left: 0; top: 0; bottom: 0; width: 5px; }
+  .core-stripe.high { background: var(--high); }
+  .core-stripe.medium { background: var(--yellow); }
+  .core-stripe.low { background: var(--green); }
+  .core-stripe.caution { background: var(--red); }
+
+  .card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 20px 18px 26px;
+    cursor: pointer;
+    gap: 16px;
+    border: var(--clickable-hint-width) solid var(--clickable-hint);
+    border-radius: var(--radius-md, 8px) var(--radius-md, 8px) 0 0;
+    transition: border-color .15s ease, border-width .15s ease;
+  }
+  .card-head:hover { background: var(--panel-hover); }
+  .card.open .card-head {
+    border-width: var(--clickable-active-width);
+    border-color: var(--green);
+  }
+
+  .card-title-block { flex: 1; min-width: 0; }
+  .card-title {
+    font-family: 'Arial Narrow', Arial, sans-serif;
+    font-weight: 600;
+    font-size: 22px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .card-purpose { color: var(--text-dim); font-size: 13px; margin-top: 3px; }
+  .caution-flag {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    background: rgba(229,72,77,0.15);
+    color: var(--red);
+    border: 3px solid rgba(229,72,77,0.4);
+    padding: 2px 7px;
+    border-radius: 4px;
+    text-transform: uppercase;
+  }
+
+  .badge {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 4px;
+    white-space: nowrap;
+  }
+  .badge.high { background: rgba(18,140,126,0.25); color: #6FE3D1; }
+  .badge.medium { background: rgba(255,192,0,0.15); color: var(--yellow); }
+  .badge.low { background: rgba(37,211,102,0.15); color: var(--green); }
+
+  .card-right { display: flex; align-items: center; gap: 22px; flex-shrink: 0; }
+
+  .progress-block { text-align: right; min-width: 130px; }
+  .progress-num {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 13px;
+    color: var(--text-dim);
+    margin-bottom: 5px;
+  }
+  .progress-num b { color: var(--text); }
+  .progress-bar {
+    width: 130px;
+    height: 6px;
+    background: var(--line);
+    border-radius: 999px;
+    overflow: hidden;
+    display: flex;
+  }
+  .progress-bar .seg.done { background: var(--green); }
+  .progress-bar .seg.progress { background: var(--yellow); }
+  .progress-bar .seg.notstarted { background: var(--red); }
+
+  .chevron { font-size: 14px; color: var(--text-dim); transition: transform .2s ease; }
+  .card.open .chevron { transform: rotate(90deg); }
+
+  .task-panel { max-height: 0; overflow: hidden; transition: max-height .25s ease; }
+  .card.open .task-panel { max-height: 900px; }
+
+  .task-panel-inner { padding: 4px 20px 18px 26px; }
+
+  .caution-banner {
+    background: rgba(229,72,77,0.1);
+    border: 3px solid rgba(229,72,77,0.35);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 12.5px;
+    color: #F0B8BA;
+    margin-bottom: 12px;
+    line-height: 1.5;
+  }
+  .caution-banner b { color: var(--red); }
+
+  table { width: 100%; border-collapse: collapse; }
+  th {
+    text-align: left;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 10px;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    padding: 6px 10px;
+    border-bottom: 3px solid var(--line);
+  }
+  td { padding: 9px 10px; font-size: 13px; border-bottom: 3px solid var(--line); vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  .task-name { max-width: 320px; }
+  .task-owner { color: var(--text-dim); white-space: nowrap; }
+  .task-notes { color: var(--text-dim); font-size: 12px; max-width: 260px; }
+
+  .status-pill {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 3px 9px;
+    border-radius: 999px;
+    white-space: nowrap;
+    display: inline-block;
+    cursor: pointer;
+    border: 3px solid transparent;
+    transition: transform .1s ease, border-color .15s ease;
+  }
+  .status-pill:hover { border-color: currentColor; transform: scale(1.04); }
+  .status-pill:active { transform: scale(0.97); }
+
+  .wa-link {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 11px;
+    letter-spacing: 0.03em;
+    color: var(--green);
+    background: rgba(37,211,102,0.12);
+    border: 3px solid rgba(37,211,102,0.35);
+    border-radius: 999px;
+    padding: 5px 12px;
+    text-decoration: none;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    transition: background .15s ease, transform .1s ease;
+  }
+  .wa-link:hover { background: rgba(37,211,102,0.22); transform: translateY(-1px); }
+  .wa-link.disabled { color: var(--text-dim); background: transparent; border-color: var(--line); cursor: default; pointer-events: none; }
+
+  .no-results {
+    color: var(--text-dim);
+    font-size: 13px;
+    padding: 24px;
+    text-align: center;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  .status-pill.done { background: rgba(37,211,102,0.16); color: var(--green); }
+  .status-pill.progress { background: rgba(255,192,0,0.16); color: var(--yellow); }
+  .status-pill.notstarted { background: rgba(229,72,77,0.16); color: var(--red); }
+
+  footer {
+    margin-top: 30px;
+    color: var(--text-dim);
+    font-size: 11px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    text-align: center;
+  }
+
+  @media (max-width: 720px) {
+    .stats { grid-template-columns: repeat(2, 1fr); }
+    .card-head { flex-direction: column; align-items: flex-start; }
+    .card-right { width: 100%; justify-content: space-between; }
+  }
+
+  .pdf-btn {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 12.5px;
+    background: var(--gold-soft);
+    color: var(--gold);
+    border: 3px solid var(--gold);
+    border-radius: 8px;
+    padding: 10px 16px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background .15s ease;
+  }
+  .pdf-btn:hover { background: rgba(37,211,102,0.28); }
+
+  .csv-btn {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 12.5px;
+    background: rgba(18,140,126,0.16);
+    color: #6FE3D1;
+    border: 3px solid var(--high);
+    border-radius: 8px;
+    padding: 10px 16px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background .15s ease;
+  }
+  .csv-btn:hover { background: rgba(18,140,126,0.30); }
+
+  .epub-btn {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 12.5px;
+    background: rgba(255,192,0,0.14);
+    color: var(--yellow);
+    border: 3px solid var(--yellow);
+    border-radius: 8px;
+    padding: 10px 16px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background .15s ease;
+  }
+  .epub-btn:hover { background: rgba(255,192,0,0.28); }
+
+  .print-meta { display: none; }
+
+  @media print {
+    body { background: #FFFFFF; color: #0B141A; padding: 0; }
+    .search-wrap, .filters, .pdf-btn, .csv-btn, .epub-btn, .chevron, .wa-link, .notes-form { display: none !important; }
+    .print-meta {
+      display: block;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 11px;
+      color: #555;
+      margin-bottom: 12px;
+    }
+    .card { background: #FFFFFF; border: 3px solid #ccc; break-inside: avoid; margin-bottom: 10px; }
+    .card-head:hover { background: none; }
+    .task-panel { max-height: none !important; }
+    .task-panel-inner { padding-top: 8px; }
+    .stat { background: #F5F5F5; }
+    .eyebrow, h1, .subtitle, .stat .lbl, .card-purpose, th, .task-owner, .task-notes { color: #333 !important; }
+    table, .card, .stats { page-break-inside: avoid; }
+  }
+
+  .notes-section {
+    margin-top: 14px;
+    border-top: 3px dashed var(--line);
+    padding-top: 14px;
+  }
+  .notes-header {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-dim);
+    margin-bottom: 10px;
+  }
+  .note-item { display: flex; gap: 10px; margin-bottom: 12px; }
+  .note-avatar {
+    width: 26px; height: 26px; border-radius: 50%;
+    background: var(--gold-soft); color: var(--gold);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700; flex-shrink: 0;
+    font-family: ui-monospace, monospace;
+  }
+  .note-body { flex: 1; min-width: 0; }
+  .note-meta { font-size: 11.5px; color: var(--text-dim); margin-bottom: 2px; }
+  .note-meta b { color: var(--text); }
+  .note-text { font-size: 13px; color: var(--text); line-height: 1.45; }
+  .no-notes { font-size: 12px; color: var(--text-dim); font-style: italic; margin-bottom: 10px; }
+</style>
+
+<script>
+/*
+  PROJECTS field guide (one object per WhatsApp group):
+    name         short display name (emoji flags fine to keep)
+    aliases      alternate names/spellings the search box should also match
+    purpose      one dense sentence: what's being negotiated/done, current state
+    priority     "high" / "medium" / "low"
+    caution      true/false — flag if the chat shows advance-fee / unverifiable-
+                 counterparty patterns worth a second look before committing
+                 time, money, or a signature
+    whatsappLink the group's invite link (verified live before adding), or null
+    notes        reviewer/annotation entries — [{author, date, text}], usually empty
+    tasks        [task, owner, status, notes] rows; status is exactly
+                 "done" / "progress" / "notstarted"
+*/
+const PROJECTS = [
+  {
+    name: "🇿🇦Serenity🇿🇦",
+    aliases: ["Serenity"],
+    purpose: "Distribution deal for VivaChek drug/screening test kits into South Africa — sourcing via Frank, local commercialization via Nicole (trading as MedSerenity). Critical path is SAHPRA product licensing; a Cape Town office visit was arranged 9/9 after slow email/phone response from the compliance vendor.",
+    priority: "high",
+    caution: false,
+    whatsappLink: "https://chat.whatsapp.com/LJWJ0UhQQxU6jmBt1q7PXX?mode=gi_t",
+    notes: [],
+    tasks: [
+      ["Research SADC certificate-of-origin route (one member state's certification recognized across SADC)", "Dr. Kudzai Nyamuomba", "done", "Raised 8/22; superseded once SAHPRA licensing was confirmed as the actual requirement (8/27)"],
+      ["Confirm which regulatory path is required to distribute in SA", "Nicole Chitareni", "done", "Ministry contact confirmed 8/27: SADC certificate helps, but a SAHPRA certificate/license is still required"],
+      ["Arrange courier of 5 test kits to Nicole", "Dr. Kudzai Nyamuomba / Frank", "progress", "Set for 8/26 via The Courier Guy (Louis Trichardt); postponed a week after Nicole was hospitalized with flu (8/25); no confirmed delivery yet in the chat"],
+      ["Decide which company entity to register/trade under", "Nicole Chitareni / Dr. Kudzai Nyamuomba", "done", "8/27: use Nicole's existing tax-compliant, CSD-registered company (trading as \"MedSerenity\") rather than incur 2x+ cost registering a new pharma entity"],
+      ["Get SAHPRA compliance quotes", "Nicole Chitareni", "done", "Two companies quoted 8/27; Pharmers' brochure: R55,000 total, R15,600 for the application stage alone, ~15 working days per their materials"],
+      ["Get a full cost breakdown reflecting existing certifications (ISO 13485 / MDSAP already held)", "Nicole Chitareni", "progress", "Requested 8/27, followed up again 8/31 with no response by that date"],
+      ["Follow up with Pharmers after slow response", "Nicole Chitareni", "done", "Follow-up email sent 8/31; vendor finally responded and a meeting was held 9/8 at 14:00 CAT"],
+      ["Scope the engagement down to application only", "Dr. Kudzai Nyamuomba", "done", "9/8: team decided they only need the SAHPRA application itself — skipping the consultation and collection-fee add-ons"],
+      ["Visit SAHPRA Radiation Control office in person for direct answers", "~ Norman Nyamuwomba", "progress", "Nicole asked 9/9 after phone/email to the department went unanswered; Norman confirmed 9/9 he'd visit the Tygervalley office and report back on process, documentation, and timelines"],
+    ]
+  }
+];
+
+function countBy(tasks) {
+  const c = { done: 0, progress: 0, notstarted: 0 };
+  tasks.forEach(t => c[t[2]]++);
+  return c;
+}
+
+function overallCounts() {
+  let total = 0, done = 0, progress = 0, notstarted = 0;
+  PROJECTS.forEach(p => {
+    const c = countBy(p.tasks);
+    total += p.tasks.length; done += c.done; progress += c.progress; notstarted += c.notstarted;
+  });
+  return { total, done, progress, notstarted };
+}
+
+function renderStats() {
+  const { total, done, progress, notstarted } = overallCounts();
+  const stats = [
+    { num: PROJECTS.length, lbl: "Groups", cls: "" },
+    { num: total, lbl: "Total Tasks", cls: "" },
+    { num: done, lbl: "Done", cls: "done" },
+    { num: progress, lbl: "In Progress", cls: "progress" },
+    { num: notstarted, lbl: "Not Started", cls: "notstarted" },
+  ];
+  document.getElementById("stats").innerHTML = stats.map(s =>
+    `<div class="stat ${s.cls}"><div class="num">${s.num}</div><div class="lbl">${s.lbl}</div></div>`
+  ).join("");
+}
+
+function renderDonut() {
+  const { total, done, progress, notstarted } = overallCounts();
+  const r = 30, circ = 2 * Math.PI * r;
+  const dDone = total ? (done/total)*circ : 0;
+  const dProg = total ? (progress/total)*circ : 0;
+  const dNS = total ? (notstarted/total)*circ : 0;
+  let offset = 0;
+  const seg = (len, color, off) => `<circle r="${r}" cx="40" cy="40" fill="none" stroke="${color}" stroke-width="10"
+      stroke-dasharray="${len} ${circ-len}" stroke-dashoffset="${-off}" transform="rotate(-90 40 40)"/>`;
+  const svg = `
+    <svg width="80" height="80" viewBox="0 0 80 80">
+      <circle r="${r}" cx="40" cy="40" fill="none" stroke="#263640" stroke-width="10"/>
+      ${seg(dDone, "#25D366", offset)}
+      ${offset += dDone, seg(dProg, "#FFC000", offset)}
+      ${offset += dProg, seg(dNS, "#E5484D", offset)}
+      <text x="40" y="45" text-anchor="middle" font-family="ui-monospace, monospace" font-size="16" font-weight="700" fill="#E9EDEF">${total ? Math.round(done/total*100) : 0}%</text>
+    </svg>`;
+  const legend = `
+    <div class="donut-legend">
+      <div><span class="sw" style="background:#25D366"></span>Done — ${done}</div>
+      <div><span class="sw" style="background:#FFC000"></span>In Progress — ${progress}</div>
+      <div><span class="sw" style="background:#E5484D"></span>Not Started — ${notstarted}</div>
+    </div>`;
+  document.getElementById("donut-block").innerHTML = svg + legend;
+}
+
+let currentFilter = "all";
+let searchTerm = "";
+
+function onSearch(v) {
+  searchTerm = v.trim().toLowerCase();
+  renderGrid();
+}
+
+function cycleStatus(projIdx, taskIdx, ev) {
+  ev.stopPropagation();
+  const order = ["notstarted", "progress", "done"];
+  const t = PROJECTS[projIdx].tasks[taskIdx];
+  const next = order[(order.indexOf(t[2]) + 1) % order.length];
+  t[2] = next;
+  renderStats();
+  renderDonut();
+  renderGrid();
+  const card = document.querySelector(`.card[data-idx="${projIdx}"]`);
+  if (card) card.classList.add("open");
+}
+
+function renderFilters() {
+  const opts = [["all","All Groups"],["high","High Priority"],["medium","Medium Priority"],["low","Low Priority"],["caution","⚠ Caution"]];
+  document.getElementById("filters").innerHTML = opts.map(([key,label]) =>
+    `<button class="filter-btn${key===currentFilter?' active':''}" data-key="${key}">${label}</button>`
+  ).join("");
+  document.querySelectorAll(".filter-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      currentFilter = btn.dataset.key;
+      renderFilters();
+      renderGrid();
+    });
+  });
+}
+
+function statusLabel(s) {
+  return s === "done" ? "Done" : s === "progress" ? "In Progress" : "Not Started";
+}
+
+function matchesSearch(p) {
+  if (!searchTerm) return true;
+  const haystack = [p.name, p.purpose, ...(p.aliases || []), ...p.tasks.flatMap(t => [t[0], t[1], t[3]])]
+    .join(" ").toLowerCase();
+  return haystack.includes(searchTerm);
+}
+
+function renderGrid() {
+  const grid = document.getElementById("grid");
+  let anyVisible = false;
+
+  grid.innerHTML = PROJECTS.map((p, idx) => {
+    const c = countBy(p.tasks);
+    const total = p.tasks.length;
+    const pct = k => total ? (c[k]/total*100) : 0;
+    const passesFilter = currentFilter === "all" || p.priority === currentFilter || (currentFilter === "caution" && p.caution);
+    const passesSearch = matchesSearch(p);
+    const visible = passesFilter && passesSearch;
+    if (visible) anyVisible = true;
+    const stripeClass = p.caution ? "caution" : p.priority;
+
+    const rows = p.tasks.map((t, tIdx) => `
+      <tr>
+        <td class="task-name">${t[0]}</td>
+        <td class="task-owner">${t[1]}</td>
+        <td><span class="status-pill ${t[2]}" onclick="cycleStatus(${idx},${tIdx},event)" title="Click to change status">${statusLabel(t[2])}</span></td>
+        <td class="task-notes">${t[3]}</td>
+      </tr>`).join("");
+
+    const cautionBanner = p.caution ? `<div class="caution-banner"><b>⚠ Caution:</b> this group shows patterns worth verifying independently before committing time, money, or a signature.</div>` : "";
+
+    return `
+    <div class="card${visible?'':' hidden'}" data-idx="${idx}">
+      <div class="core-stripe ${stripeClass}"></div>
+      <div class="card-head" onclick="toggleCard(${idx})">
+        <div class="card-title-block">
+          <div class="card-title">
+            ${p.name}
+            <span class="badge ${p.priority}">${p.priority}</span>
+            ${p.caution ? '<span class="caution-flag">⚠ review</span>' : ''}
+          </div>
+          <div class="card-purpose">${p.purpose}</div>
+        </div>
+        <div class="card-right">
+          <div class="progress-block">
+            <div class="progress-num"><b>${c.done}</b>/${total} done</div>
+            <div class="progress-bar">
+              <div class="seg done" style="width:${pct('done')}%"></div>
+              <div class="seg progress" style="width:${pct('progress')}%"></div>
+              <div class="seg notstarted" style="width:${pct('notstarted')}%"></div>
+            </div>
+          </div>
+          ${p.whatsappLink
+            ? `<a class="wa-link" href="${p.whatsappLink}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">🔗 Open in WhatsApp</a>`
+            : `<span class="wa-link disabled" title="No invite link added yet">🔗 No link yet</span>`}
+          <div class="chevron">▶</div>
+        </div>
+      </div>
+      <div class="task-panel">
+        <div class="task-panel-inner">
+          ${cautionBanner}
+          <table>
+            <thead><tr><th>Task</th><th>Owner</th><th>Status</th><th>Notes</th></tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+          <div class="notes-section">
+            <div class="notes-header">💬 Reviewer Notes</div>
+            <div class="notes-list" id="notes-list-${idx}">${renderNotesHTML(p.notes)}</div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }).join("") + (anyVisible ? "" : `<div class="no-results">No groups match "${searchTerm}" with the current filter.</div>`);
+}
+
+function toggleCard(idx) {
+  const card = document.querySelector(`.card[data-idx="${idx}"]`);
+  card.classList.toggle("open");
+}
+
+function renderNotesHTML(notes) {
+  if (!notes || notes.length === 0) {
+    return `<div class="no-notes">No reviewer notes yet.</div>`;
+  }
+  return notes.map(n => `
+    <div class="note-item">
+      <div class="note-avatar">${n.author.trim().charAt(0).toUpperCase()}</div>
+      <div class="note-body">
+        <div class="note-meta"><b>${n.author}</b> · ${n.date}</div>
+        <div class="note-text">${n.text}</div>
+      </div>
+    </div>`).join("");
+}
+
+function exportPDF() {
+  document.querySelectorAll(".card").forEach(c => c.classList.add("open"));
+  const stamp = document.getElementById("print-meta");
+  if (stamp) {
+    const now = new Date();
+    stamp.textContent = "Report generated " + now.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" }) + " · v1.0";
+  }
+  setTimeout(() => window.print(), 60);
+}
+
+function csvCell(v) {
+  const s = String(v == null ? "" : v);
+  if (/[",\n]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+  return s;
+}
+
+function exportCSV() {
+  const rows = [["Group", "Priority", "Task", "Owner", "Status", "Task Notes"]];
+  PROJECTS.forEach(p => {
+    p.tasks.forEach(t => {
+      rows.push([p.name, p.priority, t[0], t[1], statusLabel(t[2]), t[3]]);
+    });
+  });
+  rows.push([]);
+  rows.push(["Group", "Reviewer", "Date", "Reviewer Note"]);
+  PROJECTS.forEach(p => {
+    (p.notes || []).forEach(n => {
+      rows.push([p.name, n.author, n.date, n.text]);
+    });
+  });
+  const csv = rows.map(r => r.map(csvCell).join(",")).join("\r\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "WhatsApp_Groups_Dashboard_" + new Date().toISOString().slice(0,10) + ".csv";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function escXml(s) {
+  return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+const STATUS_COLOR = { done: "#0F9D58", progress: "#B8860B", notstarted: "#C0392B" };
+
+function chapterXhtml(p) {
+  let cautionHtml = "";
+  if (p.caution) {
+    cautionHtml = `<div class="caution">&#9888; <strong>Caution:</strong> this group shows patterns worth verifying independently before committing time, money, or a signature.</div>`;
+  }
+  const rows = p.tasks.map(t => {
+    const [task, owner, status, note] = t;
+    const color = STATUS_COLOR[status] || "#333";
+    return `<tr><td>${escXml(task)}</td><td>${escXml(owner)}</td><td><span style="color:${color};font-weight:bold;">${escXml(statusLabel(status))}</span></td><td class="notes">${escXml(note)}</td></tr>`;
+  }).join("\n");
+  let notesHtml;
+  if (p.notes && p.notes.length) {
+    const items = p.notes.map(n => `<li><strong>${escXml(n.author)}</strong> (${escXml(n.date)}): ${escXml(n.text)}</li>`).join("\n");
+    notesHtml = `<h3>Reviewer Notes</h3><ul class="reviewer-notes">${items}</ul>`;
+  } else {
+    notesHtml = `<h3>Reviewer Notes</h3><p class="no-notes"><em>No reviewer notes yet.</em></p>`;
+  }
+  return `<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head><title>${escXml(p.name)}</title><link rel="stylesheet" type="text/css" href="style.css"/></head>
+<body>
+<h1>${escXml(p.name)}</h1>
+<p class="purpose">${escXml(p.purpose)}</p>
+<p class="badge">Priority: <strong>${escXml(p.priority)}</strong></p>
+${cautionHtml}
+<table>
+<thead><tr><th>Task</th><th>Owner</th><th>Status</th><th>Notes</th></tr></thead>
+<tbody>
+${rows}
+</tbody>
+</table>
+${notesHtml}
+</body>
+</html>`;
+}
+
+async function exportEPUB() {
+  const zip = new JSZip();
+  zip.file("mimetype", "application/epub+zip", { compression: "STORE" });
+
+  zip.folder("META-INF").file("container.xml", `<?xml version="1.0" encoding="UTF-8"?>
+<container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
+  <rootfiles>
+    <rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/>
+  </rootfiles>
+</container>`);
+
+  const oebps = zip.folder("OEBPS");
+  oebps.file("style.css", `
+body { font-family: Georgia, serif; margin: 1.2em; color: #1a1a1a; }
+h1 { font-size: 1.5em; border-bottom: 2px solid #128C7E; padding-bottom: 6px; }
+.purpose { color: #555; font-style: italic; margin-top: 4px; }
+.badge { font-size: 0.9em; color: #128C7E; }
+table { width: 100%; border-collapse: collapse; margin-top: 1em; font-size: 0.85em; }
+th, td { border: 3px solid #ccc; padding: 6px 8px; text-align: left; vertical-align: top; }
+th { background: #f0f0f0; }
+.notes { color: #555; font-size: 0.9em; }
+.caution { background: #fdecea; border: 3px solid #e5484d; padding: 10px; margin: 10px 0; border-radius: 6px; }
+.reviewer-notes { padding-left: 1.2em; }
+.reviewer-notes li { margin-bottom: 8px; }
+.no-notes { color: #888; }
+`);
+
+  const now = new Date().toISOString();
+  oebps.file("titlepage.xhtml", `<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head><title>WhatsApp Groups Dashboard</title><link rel="stylesheet" type="text/css" href="style.css"/></head>
+<body>
+<h1>WhatsApp Groups Dashboard</h1>
+<p class="purpose">WhatsApp Group &#8594; Project Tracker &#8212; snapshot report</p>
+<p>${PROJECTS.length} groups tracked as ${PROJECTS.length} live projects. Generated ${escXml(now)}.</p>
+<p>Tracker version: 1.0</p>
+</body>
+</html>`);
+
+  const chapters = [["titlepage.xhtml", "WhatsApp Groups Dashboard"]];
+  PROJECTS.forEach((p, i) => {
+    const fname = `chapter${i+1}.xhtml`;
+    oebps.file(fname, chapterXhtml(p));
+    chapters.push([fname, p.name]);
+  });
+
+  let manifest = `<item id="style" href="style.css" media-type="text/css"/>\n<item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/>\n`;
+  let spine = "";
+  let navItems = "";
+  chapters.forEach((c, i) => {
+    const id = "item" + i;
+    manifest += `<item id="${id}" href="${c[0]}" media-type="application/xhtml+xml"/>\n`;
+    spine += `<itemref idref="${id}"/>\n`;
+    navItems += `<li><a href="${c[0]}">${escXml(c[1])}</a></li>\n`;
+  });
+
+  const bookUuid = "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, ch => {
+    const r = Math.random() * 16 | 0, v = ch === "x" ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+
+  oebps.file("content.opf", `<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://www.idpf.org/2007/opf" unique-identifier="bookid" version="3.0">
+  <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+    <dc:identifier id="bookid">urn:uuid:${bookUuid}</dc:identifier>
+    <dc:title>WhatsApp Groups Dashboard</dc:title>
+    <dc:language>en</dc:language>
+    <dc:creator>WhatsApp Groups Dashboard</dc:creator>
+    <meta property="dcterms:modified">${now}</meta>
+  </metadata>
+  <manifest>
+${manifest}  </manifest>
+  <spine>
+${spine}  </spine>
+</package>`);
+
+  oebps.file("nav.xhtml", `<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">
+<head><title>Table of Contents</title></head>
+<body>
+<nav epub:type="toc" id="toc">
+<h1>Table of Contents</h1>
+<ol>
+${navItems}</ol>
+</nav>
+</body>
+</html>`);
+
+  const blob = await zip.generateAsync({ type: "blob", mimeType: "application/epub+zip" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "WhatsApp_Groups_Dashboard_" + new Date().toISOString().slice(0,10) + ".epub";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+renderStats();
+renderDonut();
+renderFilters();
+renderGrid();
+</script>
+</body>
+</html>
