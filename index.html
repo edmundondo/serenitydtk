@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<!-- TRACKER VERSION: 1.1 — bump this comment and CONTENT/version-badge together on future updates -->
+<!-- TRACKER VERSION: 1.2 — bump this comment and CONTENT/version-badge together on future updates -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <title>Serenity Drug Kits Tracker</title>
-<meta name="tracker-version" content="1.1">
+<meta name="tracker-version" content="1.2">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 </head>
 <body>
@@ -12,8 +12,8 @@
   <section class="hero">
   <header>
     <div class="eyebrow">WhatsApp Group → Project Tracker</div>
-    <div class="title-row"><h1>Serenity Drug Kits Tracker</h1><span class="version-badge">v1.1</span></div>
-    <div class="subtitle">1 group tracked as 1 live project · last synced from chat export 9/13/26</div>
+    <div class="title-row"><h1>Serenity Drug Kits Tracker</h1><span class="version-badge">v1.2</span></div>
+    <div class="subtitle">2 groups tracked as 2 live projects · last synced from chat exports 10/16/26</div>
     <div class="print-meta" id="print-meta"></div>
   </header>
   </section>
@@ -39,7 +39,7 @@
   <div class="grid" id="grid"></div>
   </section>
 
-  <footer>Click a group row to expand · click any status pill to cycle done → in progress → not started · search and filter above <span class="version-tag">v1.1</span></footer>
+  <footer>Click a group row to expand · click any status pill to cycle done → in progress → not started · search and filter above <span class="version-tag">v1.2</span></footer>
 </div>
 
 <style>
@@ -482,7 +482,7 @@ const PROJECTS = [
   {
     name: "🇿🇦Serenity🇿🇦",
     aliases: ["Serenity"],
-    purpose: "Distribution deal for VivaChek drug/screening test kits into South Africa — sourcing via Frank, local commercialization via Nicole (trading as MedSerenity). Critical path is SAHPRA product licensing; a Cape Town office visit was arranged 9/9 after slow email/phone response from the compliance vendor.",
+    purpose: "Distribution deal for VivaChek drug/screening test kits into South Africa — sourcing via Frank, local commercialization via Nicole (trading as MedSerenity). Critical path is SAHPRA licensing: the full Medical Devices establishment licence requirements arrived 9/25 (5 annexures, R15,600 fee, 6–8 week evaluation); the team is now scheduling a call to assemble and submit the application.",
     priority: "high",
     caution: false,
     whatsappLink: "https://chat.whatsapp.com/LJWJ0UhQQxU6jmBt1q7PXX?mode=gi_t",
@@ -490,13 +490,32 @@ const PROJECTS = [
     tasks: [
       ["Research SADC certificate-of-origin route (one member state's certification recognized across SADC)", "Dr. Kudzai Nyamuomba", "done", "Raised 8/22; superseded once SAHPRA licensing was confirmed as the actual requirement (8/27)"],
       ["Confirm which regulatory path is required to distribute in SA", "Nicole Chitareni", "done", "Ministry contact confirmed 8/27: SADC certificate helps, but a SAHPRA certificate/license is still required"],
-      ["Arrange courier of 5 test kits to Nicole", "Dr. Kudzai Nyamuomba / Frank", "progress", "Set for 8/26 via The Courier Guy (Louis Trichardt); postponed a week after Nicole was hospitalized with flu (8/25); no confirmed delivery yet in the chat"],
+      ["Arrange courier of 5 test kits to Nicole", "Dr. Kudzai Nyamuomba / Frank", "progress", "Set for 8/26 via The Courier Guy (Louis Trichardt); postponed a week after Nicole was hospitalized with flu (8/25); still no confirmed delivery in the chat as of 10/13"],
       ["Decide which company entity to register/trade under", "Nicole Chitareni / Dr. Kudzai Nyamuomba", "done", "8/27: use Nicole's existing tax-compliant, CSD-registered company (trading as \"MedSerenity\") rather than incur 2x+ cost registering a new pharma entity"],
       ["Get SAHPRA compliance quotes", "Nicole Chitareni", "done", "Two companies quoted 8/27; Pharmers' brochure: R55,000 total, R15,600 for the application stage alone, ~15 working days per their materials"],
-      ["Get a full cost breakdown reflecting existing certifications (ISO 13485 / MDSAP already held)", "Nicole Chitareni", "progress", "Requested 8/27, followed up again 8/31 with no response by that date"],
       ["Follow up with Pharmers after slow response", "Nicole Chitareni", "done", "Follow-up email sent 8/31; vendor finally responded and a meeting was held 9/8 at 14:00 CAT"],
       ["Scope the engagement down to application only", "Dr. Kudzai Nyamuomba", "done", "9/8: team decided they only need the SAHPRA application itself — skipping the consultation and collection-fee add-ons"],
-      ["Visit SAHPRA Radiation Control office in person for direct answers", "~ Norman Nyamuwomba", "progress", "Nicole asked 9/9 after phone/email to the department went unanswered; Norman confirmed 9/9 he'd visit the Tygervalley office and report back on process, documentation, and timelines"],
+      ["Visit SAHPRA Radiation Control office in person for direct answers", "~ Norman Nyamuwomba", "done", "Visited Cape Town's Tygervalley office 9/18; told that office is Radiation Control only and doesn't handle test-kit licensing — redirected to SAHPRA's Operations Control section online, with head office in Pretoria and a Durban office"],
+      ["Get Nicole's company details and contact info on file", "Dr. Kudzai Nyamuomba", "done", "Company confirmation letter, AR, tax PIN, and email (poshedluxuryscents@gmail.com) collected 9/17–9/18 so Norman could present a complete package to SAHPRA"],
+      ["Get SAHPRA to confirm the actual Medical Devices establishment licence requirements", "~ Norman Nyamuwomba", "done", "After the Cape Town office redirect, Kudzai emailed SAHPRA directly and Norman called and followed up; SAHPRA's official reply (forwarded by Norman 9/25) lists 5 required annexures (cover letter, licence application, Excel application form, proof of R15,600 payment, CV of Authorised Representative, Quality Manual), applies to mdadmin@sahpra.org.za, with a 6–8 week evaluation"],
+      ["Schedule a call to walk through the SAHPRA submission steps", "Dr. Kudzai Nyamuomba / Nicole / Norman", "progress", "Requested 9/25; a group call on 10/3 was missed, Nicole was traveling and missed a follow-up attempt 10/5–10/6, and as of 10/13 the team agreed to hold the call after work hours (Norman available from 5:30pm weekdays or anytime weekends) — not yet confirmed held"],
+      ["Compile and submit the 5-annexure SAHPRA application to mdadmin@sahpra.org.za", "Nicole Chitareni / Dr. Kudzai Nyamuomba", "notstarted", "Blocked on the scheduling call above to divide up who prepares which annexure; no submission yet as of 10/13"],
+    ]
+  },
+  {
+    name: "🇧🇼2026 Botswana Team🇧🇼",
+    aliases: ["Botswana Team", "2026 Botswana Team"],
+    purpose: "Expanding the same VivaChek drug/screening test kit business (as run in Serenity, South Africa) into Botswana — group stood up 10/13, marketing and pricing materials shared, and a Botswana-specific proposal was reviewed on a call 10/16.",
+    priority: "medium",
+    caution: false,
+    whatsappLink: "https://chat.whatsapp.com/FCASsTy3MrLCW3foimJGr7?mode=gi_t",
+    notes: [],
+    tasks: [
+      ["Introduce team and share initial marketing/pricing materials", "Eddie Ed", "done", "Product photo, DrugTestKit_PriceList.docx, and the Serenity marketing brochure shared 10/13 ahead of the first call"],
+      ["Hold kickoff/status call(s)", "Dr. Kudzai Nyamuomba / team", "progress", "Call held 10/14 (~15:59); a second attempt 10/15 was a 56-second missed call with Bissau joining; a further call was held 10/16 to review the proposal"],
+      ["Share expanded product catalogue (28-panel cup list)", "Dr. Kudzai Nyamuomba", "done", "28 Panel Cup List.docx (10pp) shared 10/15"],
+      ["Draft Botswana-specific proposal and per-panel pricing", "Dr. Kudzai Nyamuomba", "done", "Botswana Serenity_Drug_Test_Kits_.docx, Pricing_Per Panel.docx, and Botswana_Drug_Test_Kit_Proposal.pdf shared 10/15 ahead of the 10/16 call"],
+      ["Review proposal and pricing, align on next steps", "Dr. Kudzai Nyamuomba / Eddie Ed / Bissau", "progress", "Discussed on the 10/16 call; outcome and next steps not yet captured in the chat"],
     ]
   }
 ];
@@ -694,7 +713,7 @@ function exportPDF() {
   const stamp = document.getElementById("print-meta");
   if (stamp) {
     const now = new Date();
-    stamp.textContent = "Report generated " + now.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" }) + " · v1.1";
+    stamp.textContent = "Report generated " + now.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" }) + " · v1.2";
   }
   setTimeout(() => window.print(), 60);
 }
@@ -810,7 +829,7 @@ th { background: #f0f0f0; }
 <h1>Serenity Drug Kits Tracker</h1>
 <p class="purpose">WhatsApp Group &#8594; Project Tracker &#8212; snapshot report</p>
 <p>${PROJECTS.length} groups tracked as ${PROJECTS.length} live projects. Generated ${escXml(now)}.</p>
-<p>Tracker version: 1.1</p>
+<p>Tracker version: 1.2</p>
 </body>
 </html>`);
 
